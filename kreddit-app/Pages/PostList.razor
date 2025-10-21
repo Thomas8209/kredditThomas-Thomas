@@ -1,0 +1,78 @@
+﻿@inherits LayoutComponentBase
+
+@using kreddit_app.Data;
+@using shared.Model;
+@inject ApiService apiService
+
+<p>
+    <a href="/new-post">Lav et nyt indlæg</a>
+</p>
+
+@if (posts == null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (posts.Length == 0)
+{
+    <p>Ingen indlæg endnu.</p>
+}
+else
+{
+    <table>
+        <tr>
+            <th>Title</th>
+            <th>Forfatter</th>
+            <th>Dato</th>
+            <th>Indhold</th>
+            <th colspan="3">Votes</th>
+        </tr>
+        @foreach (var post in posts)
+        {
+            <tr>
+                <td><a href="/post/@post.Id">@post.Title</a></td>
+                <td>@post.User?.Username</td>
+                <td>@post.CreatedAt.ToLocalTime().ToString("g")</td>
+                <td>
+                    @if (!string.IsNullOrWhiteSpace(post.Url))
+                    {
+                        <a href="@post.Url" target="_blank">@post.Url</a>
+                    }
+                    else
+                    {
+                        @post.Content
+                    }
+                </td>
+                <td>@(post.Upvotes - post.Downvotes)</td>
+                <td><button @onclick="async () => await Upvote(post.Id)">Upvote</button></td>
+                <td><button @onclick="async () => await Downvote(post.Id)">Downvote</button></td>
+            </tr>
+        }
+    </table>
+}
+
+@code {
+    private Post[]? posts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPosts();
+    }
+
+    private async Task LoadPosts()
+    {
+        posts = await apiService.GetPosts() ?? Array.Empty<Post>();
+        StateHasChanged();
+    }
+
+    private async Task Upvote(int id)
+    {
+        await apiService.UpvotePost(id);
+        await LoadPosts();
+    }
+
+    private async Task Downvote(int id)
+    {
+        await apiService.DownvotePost(id);
+        await LoadPosts();
+    }
+}

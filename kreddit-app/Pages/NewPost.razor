@@ -1,0 +1,83 @@
+﻿@page "/new-post"
+
+@using kreddit_app.Data;
+@inject ApiService apiService
+@inject NavigationManager navigationManager
+
+<PageTitle>Ny post</PageTitle>
+
+<h2>Lav et nyt indlæg</h2>
+
+<div>
+    <label>Titel</label><br />
+    <input @bind="title" placeholder="Titel" />
+</div>
+<div>
+    <label>Forfatternavn</label><br />
+    <input @bind="username" placeholder="Dit navn" />
+</div>
+<div>
+    <label>Tekst</label><br />
+    <textarea @bind="content" rows="5"></textarea>
+</div>
+<div>
+    <label>Url (brug denne hvis det er et link)</label><br />
+    <input @bind="url" placeholder="https://..." />
+</div>
+
+<p><em>Angiv enten tekst eller url.</em></p>
+
+<button @onclick="CreatePost">Gem</button>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <p style="color:red">@errorMessage</p>
+}
+
+@code {
+    private string? title;
+    private string? username;
+    private string? content;
+    private string? url;
+    private string? errorMessage;
+
+    private async Task CreatePost()
+    {
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            errorMessage = "Titel mangler.";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            errorMessage = "Forfatternavn mangler.";
+            return;
+        }
+
+        var hasContent = !string.IsNullOrWhiteSpace(content);
+        var hasUrl = !string.IsNullOrWhiteSpace(url);
+
+        if (!hasContent && !hasUrl)
+        {
+            errorMessage = "Skriv noget tekst eller angiv et link.";
+            return;
+        }
+
+        if (hasContent && hasUrl)
+        {
+            errorMessage = "Brug kun tekst eller url, ikke begge.";
+            return;
+        }
+
+        errorMessage = null;
+
+        var savedPost = await apiService.CreatePost(title ?? "", content ?? "", url ?? "", username ?? "");
+        if (savedPost == null || savedPost.Id == 0)
+        {
+            errorMessage = "Noget gik galt. Prøv igen.";
+            return;
+        }
+
+        navigationManager.NavigateTo($"/post/{savedPost.Id}");
+    }
+}

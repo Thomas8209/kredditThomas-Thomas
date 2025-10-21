@@ -1,0 +1,128 @@
+﻿@page "/post/{id}"
+
+@using kreddit_app.Data;
+@using shared.Model;
+@inject ApiService apiService
+
+<PageTitle>Kreddit</PageTitle>
+
+<style>
+div.contents {
+  background-color: #f2f0eb;
+  width: 600px;
+  border: 2px solid #452d3d;
+  padding: 10px;
+  margin-top: 20px;
+}
+</style>
+
+
+
+@if (post == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="contents">
+        <h4>@post.Title</h4>
+        <p><strong>@post.User?.Username</strong> skrev @post.CreatedAt.ToLocalTime().ToString("f")</p>
+        @if (!string.IsNullOrWhiteSpace(post.Url))
+        {
+            <p><a href="@post.Url" target="_blank">@post.Url</a></p>
+        }
+        else
+        {
+            <p>@post.Content</p>
+        }
+        <p>
+            Stemmer: @(post.Upvotes - post.Downvotes)
+            <button @onclick="async () => await UpvotePost()">Upvote</button>
+            <button @onclick="async () => await DownvotePost()">Downvote</button>
+        </p>
+    </div>
+
+    <div class="contents">
+        <h4>Comments (@(post.Comments?.Count ?? 0))</h4>
+        @if (post.Comments == null || post.Comments.Count == 0)
+        {
+            <p>Ingen kommentarer endnu.</p>
+        }
+        else
+        {
+            <table>
+                <tr>
+                    <th>Bruger</th>
+                    <th>Kommentar</th>
+                    <th>Dato</th>
+                    <th colspan="3">Stemmer</th>
+                </tr>
+                @foreach (var comment in post.Comments)
+                {
+                    <tr>
+                        <td>@comment.User?.Username</td>
+                        <td>@comment.Content</td>
+                        <td>@comment.CreatedAt.ToLocalTime().ToString("g")</td>
+                        <td>@(comment.Upvotes - comment.Downvotes)</td>
+                        <td><button @onclick="async () => await UpvoteComment(comment.Id)">Upvote</button></td>
+                        <td><button @onclick="async () => await DownvoteComment(comment.Id)">Downvote</button></td>
+                    </tr>
+                }
+            </table>
+        }
+    </div>
+
+    <CreateComment PostId="@PostId" OnCommentCreated="LoadPost"></CreateComment>
+}
+
+@code {
+    [Parameter] public string Id { get; set; } = "0";
+
+    private int PostId => int.TryParse(Id, out var parsed) ? parsed : 0;
+    private Post? post;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadPost();
+    }
+
+    private async Task LoadPost()
+    {
+        var loaded = await apiService.GetPost(PostId);
+        if (loaded == null || loaded.Id == 0)
+        {
+            post = null;
+            return;
+        }
+
+        post = loaded;
+        if (post.Comments == null)
+        {
+            post.Comments = new List<Comment>();
+        }
+    }
+
+    private async Task UpvotePost()
+    {
+        await apiService.UpvotePost(PostId);
+        await LoadPost();
+    }
+
+    private async Task DownvotePost()
+    {
+        await apiService.DownvotePost(PostId);
+        await LoadPost();
+    }
+
+    private async Task UpvoteComment(int commentId)
+    {
+        await apiService.UpvoteComment(PostId, commentId);
+        await LoadPost();
+    }
+
+    private async Task DownvoteComment(int commentId)
+    {
+        await apiService.DownvoteComment(PostId, commentId);
+        await LoadPost();
+    }
+}
