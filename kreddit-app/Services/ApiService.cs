@@ -45,11 +45,11 @@ public class ApiService
         })!;
     }
 
-    public async Task<Comment> CreateComment(string content, int postId, int userId)
+    public async Task<Comment> CreateComment(string content, int postId, string username)
     {
         string url = $"{baseAPI}posts/{postId}/comments";
      
-        HttpResponseMessage msg = await http.PostAsJsonAsync(url, new { content, userId });
+        HttpResponseMessage msg = await http.PostAsJsonAsync(url, new { content, username });
         string json = msg.Content.ReadAsStringAsync().Result;
 
         return JsonSerializer.Deserialize<Comment>(json, new JsonSerializerOptions {

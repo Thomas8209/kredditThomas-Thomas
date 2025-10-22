@@ -112,16 +112,12 @@ app.MapPost("/api/posts/{id:int}/comments", async (int id, CreateCommentRequest 
         return Results.NotFound();
     }
 
-    if (request.UserId <= 0)
+    if (string.IsNullOrWhiteSpace(request.Username))
     {
-        return Results.BadRequest("UserId is required.");
+        return Results.BadRequest("Username is required.");
     }
 
-    var user = await db.Users.FindAsync(request.UserId);
-    if (user == null)
-    {
-        return Results.BadRequest("User not found.");
-    }
+    var user = await FindOrCreateUserAsync(db, request.Username!);
 
     var comment = new Comment(request.Content!.Trim(), user: user, post: post);
 
@@ -243,4 +239,4 @@ static void SeedSampleData(KredditContext db)
 }
 
 public record CreatePostRequest(string? Title, string? Content, string? Url, string? Username);
-public record CreateCommentRequest(string? Content, int UserId);
+public record CreateCommentRequest(string? Content, string? Username);

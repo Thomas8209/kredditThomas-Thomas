@@ -4,7 +4,7 @@
 <div>
     <br/>
     <h3>Write a comment</h3>
-    <input placeholder="Dit bruger-id" type="number" id="userId" @bind-value="userId"/>
+    <input placeholder="Dit navn" type="input" id="username" @bind-value="username"/>
     <input placeholder="Content" type="input" id="content" @bind-value="content"/>
     <button id="createPostButton" type="button" @onclick="CreateNewComment">Post comment</button>
     @if (!string.IsNullOrEmpty(errorMessage))
@@ -20,13 +20,13 @@
     public int PostId { get; set; }
     [Parameter]
     public EventCallback OnCommentCreated { get; set; }
-    private int? userId;
+    private string? username;
     private string? content;
     private async void CreateNewComment()
     {
-        if (userId is null || userId <= 0)
+        if (string.IsNullOrWhiteSpace(username))
         {
-            errorMessage = "Angiv et gyldigt bruger-id.";
+            errorMessage = "Skriv dit navn.";
             return;
         }
         if (string.IsNullOrWhiteSpace(content))
@@ -35,8 +35,8 @@
             return;
         }
         errorMessage = null;
-        await apiService.CreateComment(content, PostId, userId.Value);
-        userId = null;
+        await apiService.CreateComment(content, PostId, username);
+        username = "";
         content = "";
 
         if (OnCommentCreated.HasDelegate)
